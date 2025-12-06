@@ -6,7 +6,7 @@
 ![Status](https://img.shields.io/badge/Status-Production-success)
 
 > **Live Demo (Dashboard):** [https://urbanoapi-udmqj6flfvtrnfsg3d5sm9.streamlit.app/]
-> **API Docs (Swagger):** [https://urbanoapi.onrender.com/]/docs
+> **API Docs (Swagger):** [https://urbanoapi.onrender.com/docs]
 
 ## 📖 Descripción
 
