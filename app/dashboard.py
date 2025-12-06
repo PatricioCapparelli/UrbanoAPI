@@ -2,17 +2,15 @@ import streamlit as st
 import requests
 import pandas as pd
 
-# Configuración de la página
 st.set_page_config(page_title="Urbano Logística", page_icon="🚚", layout="wide")
 
-# URL de tu Backend (FastAPI)
-API_URL = "http://127.0.0.1:8000"
+# URL Backend (FastAPI)
+API_URL = "https://urbanoapi.onrender.com/"
 
 # Título y Header
 st.title("🚚 Sistema de Gestión Logística Urbano")
 st.markdown("---")
 
-# --- BARRA LATERAL (SIDEBAR) PARA ACCIONES ---
 st.sidebar.header("📦 Nuevo Envío")
 
 with st.sidebar.form("form_crear_envio"):
@@ -21,7 +19,6 @@ with st.sidebar.form("form_crear_envio"):
     peso = st.number_input("Peso (kg)", min_value=0.1, format="%.2f")
     fragil = st.checkbox("¿Es Frágil?")
     
-    # Botón de enviar
     submitted = st.form_submit_button("Registrar Envío")
     
     if submitted:
@@ -33,7 +30,6 @@ with st.sidebar.form("form_crear_envio"):
                 "es_fragil": fragil
             }
             try:
-                # Enviamos los datos al Backend (POST)
                 res = requests.post(f"{API_URL}/envios/", json=payload)
                 if res.status_code == 200:
                     st.success(f"¡Envío creado! Tracking: {res.json()['tracking_number']}")
