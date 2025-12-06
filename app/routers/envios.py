@@ -1,22 +1,30 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, status
 from sqlalchemy.orm import Session
 from typing import List
 import random
 
-# Importamos desde el paquete padre 'app'
 from app.database import get_db
 from app import models, schemas
 
-# Creamos el Router (Es como un mini-app FastAPI dedicado solo a envíos)
+# Definimos los estados válidos como constante para evitar errores de tipeo
+ESTADOS_VALIDOS = ["En deposito", "En camino", "Entregado", "Cancelado"]
+
 router = APIRouter(
-    prefix="/envios",      # Todas las rutas empezarán con /envios
-    tags=["Envíos"]        # Etiqueta para la documentación
+    prefix="/envios",
+    tags=["Envíos"]
 )
 
-# 1. CREAR (Nota que la ruta ahora es "/" porque ya definimos el prefijo arriba)
-@router.post("/", response_model=schemas.EnvioResponse)
+# --- RUTAS ---
+
+@router.post("/", response_model=schemas.EnvioResponse, status_code=status.HTTP_201_CREATED, summary="Crear un nuevo envío")
 def crear_envio(envio: schemas.EnvioCreate, db: Session = Depends(get_db)):
+    """
+    Registra un nuevo envío en el sistema.
+    - Genera automáticamente un **Tracking Number** único.
+    - Asigna el estado inicial: **En deposito**.
+    """
     tracking = f"URB-{random.randint(1000, 9999)}"
+    
     nuevo_envio = models.Envio(
         destinatario=envio.destinatario,
         direccion=envio.direccion,
@@ -25,36 +33,52 @@ def crear_envio(envio: schemas.EnvioCreate, db: Session = Depends(get_db)):
         estado="En deposito",
         tracking_number=tracking
     )
+    
     db.add(nuevo_envio)
     db.commit()
     db.refresh(nuevo_envio)
     return nuevo_envio
 
-# 2. LISTAR
-@router.get("/", response_model=List[schemas.EnvioResponse])
+@router.get("/", response_model=List[schemas.EnvioResponse], summary="Listar todos los envíos")
 def listar_envios(db: Session = Depends(get_db)):
+    """Retorna la lista completa de envíos registrados."""
     return db.query(models.Envio).all()
 
-# 3. BUSCAR POR ID
-@router.get("/{envio_id}", response_model=schemas.EnvioResponse)
+@router.get("/{envio_id}", response_model=schemas.EnvioResponse, summary="Obtener envío por ID")
 def obtener_envio(envio_id: int, db: Session = Depends(get_db)):
     envio = db.query(models.Envio).filter(models.Envio.id == envio_id).first()
     if envio is None:
         raise HTTPException(status_code=404, detail="Envío no encontrado")
     return envio
 
-# 4. ACTUALIZAR ESTADO
-@router.put("/{envio_id}/estado", response_model=schemas.EnvioResponse)
+@router.put("/{envio_id}/estado", response_model=schemas.EnvioResponse, summary="Actualizar estado")
 def actualizar_estado(envio_id: int, nuevo_estado: str, db: Session = Depends(get_db)):
+    """
+    Actualiza el estado de un envío.
+    Estados permitidos: "En deposito", "En camino", "Entregado", "Cancelado".
+    """
     envio = db.query(models.Envio).filter(models.Envio.id == envio_id).first()
     if envio is None:
         raise HTTPException(status_code=404, detail="Envío no encontrado")
     
-    estados_validos = ["En deposito", "En camino", "Entregado", "Cancelado"]
-    if nuevo_estado not in estados_validos:
-        raise HTTPException(status_code=400, detail="Estado inválido")
+    if nuevo_estado not in ESTADOS_VALIDOS:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Estado inválido. Opciones permitidas: {ESTADOS_VALIDOS}"
+        )
     
     envio.estado = nuevo_estado
     db.commit()
     db.refresh(envio)
     return envio
+
+@router.delete("/{envio_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Eliminar envío")
+def eliminar_envio(envio_id: int, db: Session = Depends(get_db)):
+    """Elimina físicamente un registro de la base de datos."""
+    envio = db.query(models.Envio).filter(models.Envio.id == envio_id).first()
+    if envio is None:
+        raise HTTPException(status_code=404, detail="Envío no encontrado")
+    
+    db.delete(envio)
+    db.commit()
+    return None
