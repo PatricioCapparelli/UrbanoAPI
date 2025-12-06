@@ -41,7 +41,6 @@ def cargar_datos():
 def mostrar_sidebar():
     st.sidebar.header("📦 Nuevo Envío")
     
-    # Formulario de Creación
     with st.sidebar.form("form_crear_envio"):
         destinatario = st.text_input("Destinatario")
         direccion = st.text_input("Dirección")

@@ -8,7 +8,7 @@ models.Base.metadata.create_all(bind=engine)
 app = FastAPI(
     title="UrbanoAPI",
     description="API Modular para gestión logística",
-    version="2.0.0" # ¡Subimos de versión!
+    version="2.0.0" # 
 )
 
 app.include_router(envios.router)
